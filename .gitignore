@@ -1,0 +1,4 @@
+.mypy_cache
+build
+.DS_Store
+.vscode
