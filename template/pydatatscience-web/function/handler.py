@@ -9,6 +9,9 @@ from flask import Request
 
 function_root = os.environ.get("function_root")
 
+# Now  pre-load the model, e.g.
+# from .core import model
+
 
 def handle(req: Request):
     """handle a request to the function.
