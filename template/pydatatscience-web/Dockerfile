@@ -23,7 +23,7 @@ RUN apt-get update \
     && chmod +x /usr/bin/fwatchdog
 
 # Add non root user
-WORKDIR /root/
+WORKDIR /home/app/
 USER app
 
 RUN bash /tmp/miniconda.sh -bfp $HOME/conda \
@@ -38,6 +38,12 @@ COPY index.py           .
 
 RUN mkdir -p function
 RUN touch ./function/__init__.py
+
+WORKDIR /home/app/function/
+COPY function/requirements.txt	.
+RUN conda install --file requirements.txt -c ${CHANNEL}
+
+WORKDIR /home/app/
 COPY function/ ./function
 
 # Set environment variables
@@ -45,7 +51,7 @@ ENV fprocess="python index.py"
 ENV cgi_headers="true"
 ENV mode="http"
 ENV upstream_url="http://127.0.0.1:5000"
-ENV function_root="/root/function"
+ENV function_root="/home/app/function"
 
 HEALTHCHECK --interval=5s CMD [ -e /tmp/.lock ] || exit 1
 
