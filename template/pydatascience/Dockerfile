@@ -1,4 +1,9 @@
+ARG watchdog_version=0.7.7
+FROM openfaas/of-watchdog:${watchdog_version} as watchdog
 FROM python:3-slim
+
+COPY --from=watchdog /fwatchdog /usr/bin/fwatchdog
+RUN chmod +x /usr/bin/fwatchdog
 
 # Allows you to add additional packages via build-arg
 ARG ADDITIONAL_PACKAGE
@@ -13,14 +18,12 @@ ENV PATH=$HOME/conda/bin:$PATH
 
 RUN apt-get update \
     && apt-get -y install curl bzip2 ${ADDITIONAL_PACKAGE} \
-    && curl -sSL https://github.com/openfaas-incubator/of-watchdog/releases/download/0.5.1/of-watchdog > /usr/bin/fwatchdog \
     && curl -sSL https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -o /tmp/miniconda.sh \
     && chown app /tmp/miniconda.sh \
     && apt-get -qq -y remove curl \
     && apt-get -qq -y autoremove \
     && apt-get autoclean \
-    && rm -rf /var/lib/apt/lists/* /var/log/dpkg.log \
-    && chmod +x /usr/bin/fwatchdog
+    && rm -rf /var/lib/apt/lists/* /var/log/dpkg.log
 
 # Add non root user
 WORKDIR /home/app/
