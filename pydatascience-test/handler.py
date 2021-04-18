@@ -1,6 +1,8 @@
 import json
 import os
 
+import numpy as np
+
 # from .core import utils
 
 
@@ -16,4 +18,7 @@ def handle(req: bytes) -> str:
         req (bytes): request body
     """
 
-    return json.dumps({"echo": req)
+    return json.dumps({
+        "echo": req,
+        "random": np.random.random_sample(),
+    })
