@@ -41,7 +41,9 @@ jobs:
           echo "git-describe: $(git describe --tags --always)"
       - name: Publish functions
         run: >
+          DOCKER_BUILDKIT=1
           OWNER="${{ steps.get_repo_owner.outputs.repo_owner }}"
           TAG="${{ steps.get_tag.outputs.tag }}"
           faas-cli build
+          --parallel 2
           --disable-stack-pull
