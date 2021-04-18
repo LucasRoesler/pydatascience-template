@@ -1,6 +1,7 @@
-ARG watchdog_version=0.7.7
-FROM openfaas/of-watchdog:${watchdog_version} as watchdog
-FROM python:3-slim
+ARG watchdog_version=0.8.4
+ARG python_version=3.8
+FROM --platform=${TARGETPLATFORM:-linux/amd64} ghcr.io/openfaas/of-watchdog:${watchdog_version} as watchdog
+FROM --platform=${TARGETPLATFORM:-linux/amd64} python:${python_version}-slim
 
 COPY --from=watchdog /fwatchdog /usr/bin/fwatchdog
 RUN chmod +x /usr/bin/fwatchdog
@@ -17,9 +18,10 @@ ENV HOME /home/app
 ENV PATH=$HOME/conda/bin:$PATH
 
 RUN apt-get update \
-    && apt-get -y install curl bzip2 ${ADDITIONAL_PACKAGE} \
-    && curl -sSL https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -o /tmp/miniconda.sh \
-    && chown app /tmp/miniconda.sh \
+    && apt-get -y install curl bzip2 ${ADDITIONAL_PACKAGE}
+
+RUN curl -sSL "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh" -o /tmp/miniforge.sh \
+    && chown app /tmp/miniforge.sh \
     && apt-get -qq -y remove curl \
     && apt-get -qq -y autoremove \
     && apt-get autoclean \
@@ -29,25 +31,36 @@ RUN apt-get update \
 WORKDIR /home/app/
 USER app
 
-RUN bash /tmp/miniconda.sh -bfp $HOME/conda \
+RUN bash /tmp/miniforge.sh -bfp $HOME/conda \
     && conda install -y python=3 \
     && conda update conda \
     && conda clean --all --yes \
-    && rm -rf /tmp/miniconda.sh
+    && rm -rf /tmp/miniforge.sh
 
 COPY requirements.txt   .
-RUN conda install --file requirements.txt -c ${CHANNEL}
+RUN conda install --file requirements.txt -c ${CHANNEL} \
+    && pip install tox-current-env
 COPY index.py           .
 
 RUN mkdir -p function
 RUN touch ./function/__init__.py
 
 WORKDIR /home/app/function/
-COPY function/requirements.txt	.
-RUN conda install --file requirements.txt -c ${CHANNEL}
+COPY function/requirements*.txt	./
+RUN conda install --file requirements.txt --file requirements_test.txt -c ${CHANNEL}
+
+
+COPY function/ .
+
+ARG TEST_COMMAND="tox --current-env"
+ARG TEST_ENABLED=true
+RUN if [ "x$TEST_ENABLED" = "xfalse" ]; then \
+    echo "skipping tests";\
+    else \
+    eval "$TEST_COMMAND"; \
+    fi
 
 WORKDIR /home/app/
-COPY function/ ./function
 
 # Set environment variables
 ENV fprocess="python index.py"

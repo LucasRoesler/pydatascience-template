@@ -1,0 +1,15 @@
+version: 1.0
+provider:
+  name: openfaas
+  gateway: http://127.0.0.1:8080
+
+functions:
+  pydatascience-test:
+    lang: pydatascience
+    handler: ./pydatascience-test
+    image: ghcr.io/${OWNER:-lucasroesler}/pydatascience-test:${TAG:-latest}
+  pydatascience-web-test:
+    lang: pydatascience-web
+    handler: ./pydatascience-web-test
+    image: pydatascience-web-test:latest
+
